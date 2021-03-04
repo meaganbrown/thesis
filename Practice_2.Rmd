@@ -1,0 +1,513 @@
+---
+title: "Thesis Data"
+author: "Meagan Brown"
+date: "2/25/2021"
+output: html_document
+---
+
+```{r}
+#libraries
+library(tidyverse)
+library(readxl)
+library(here)
+library(USAboundaries)
+library(sf)
+library(janitor)
+library(ggplot2)
+library(gghighlight)
+library(ggrepel)
+library(knitr)
+library(raster) 
+library(getlandsat) 
+library(sf)
+library(leaflet) 
+library(plotly)
+library(units)
+library(rnaturalearth)
+library(dplyr)
+library(AOI)
+library(patchwork)
+
+```
+
+```{r}
+#Map for Domestic Wells in Kings County
+#Well purposes, well depths, well water levels, data from USGS
+#Compare Domestic + Ag wells 
+
+well_reports <- read_csv(here("data/well_reports.csv"))
+
+#Filtering out Kings, Fresno, and Tulare county and only Domestic wells 
+domestic_view <- well_reports %>% 
+  clean_names() %>% 
+  filter(decimal_longitude!="NA") %>% 
+  filter(decimal_latitude!="NA") %>% 
+  filter(county_name %in% c("Kings", "Fresno", "Tulare")) %>% 
+  filter(planned_use_former_use == "Water Supply Domestic") %>% 
+  rename("lng" = decimal_longitude, "lat" = decimal_latitude)
+  
+domestic_well <- well_reports %>% 
+  clean_names() %>% 
+  filter(decimal_longitude!="NA") %>% 
+  filter(decimal_latitude!="NA") %>% 
+  filter(county_name %in% c("Kings", "Fresno", "Tulare")) %>% 
+  filter(planned_use_former_use == "Water Supply Domestic") %>% 
+  rename("lng" = decimal_longitude, "lat" = decimal_latitude) %>% 
+  select(planned_use_former_use, lng, lat) 
+
+
+
+#Code for map 
+
+eqdc = '+proj=eqdc +lat_0=40 +lon_0=-96 +lat_1=20 +lat_2=60 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs'
+
+USAboundaries::us_states(resolution = "low")
+
+us <- us_states()
+
+CA <- us %>%
+  filter(state_abbr == "CA") %>% 
+  st_transform(5070)
+
+
+kings <- aoi_get(state = "CA", county = "Kings") %>% 
+  st_transform(5070)
+
+fresno <- aoi_get(state = "CA", county = "Fresno") %>% 
+  st_transform(5070)
+
+tulare <- aoi_get(state = "CA", county = "Tulare") %>% 
+  st_transform(5070)
+
+#Transforming domestic_well and filtering out counties  
+
+kings_well_plot <- domestic_well %>%
+  st_as_sf(coords = c("lng","lat"), crs = 4326) %>%
+  st_transform(5070) %>% 
+  st_filter(kings)
+  
+tulare_well_plot <- domestic_well %>%
+  st_as_sf(coords = c("lng","lat"), crs = 4326) %>%
+  st_transform(5070) %>% 
+  st_filter(tulare)
+  
+fresno_well_plot <- domestic_well %>%
+  st_as_sf(coords = c("lng","lat"), crs = 4326) %>%
+  st_transform(5070) %>% 
+  st_filter(fresno)
+
+domestic_plot <- rbind(kings_well_plot, tulare_well_plot, fresno_well_plot)
+
+#Plotting Domestic wells in Kings, Tulare and Fresno counties 
+dom = ggplot()+
+  geom_sf(data = kings, lty = "solid") +
+  geom_sf(data = fresno, lty="solid") +
+  geom_sf(data = tulare, lty="solid") +
+ geom_sf(data = GSA_boundary, color = "darkorange3")+
+  geom_sf(data = kings_well_plot, color = "deepskyblue4", size =0.1, alpha = 0.1) +
+  geom_sf(data = tulare_well_plot, color = "deepskyblue4", size =0.1, alpha = 0.1) +
+geom_sf(data = fresno_well_plot, color = "deepskyblue4", size =0.1, alpha = 0.1) +
+  theme_void()
+   
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(size = 0.1, linetype = 'solid', colour = "lightgrey"),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank())
+
+p2 = ggplot()+
+  geom_sf(data = CA, lty = "solid") +
+  geom_sf(data = kings, lty="solid", color = "red") +
+  geom_sf(data = fresno, lty="solid", color = "red") +
+  geom_sf(data = tulare, lty="solid", color = "red") +
+  geom_sf(data = central_valley, lty = "solid") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(size = 0.1, linetype = 'solid', colour = "lightgrey"),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank())
+
+ggsave("p2.png")
+dom
+p2+p1
+p1
+p2
+ggsave("dom.png")
+```
+
+
+```{r}
+#Central Valley 
+glenn <- aoi_get(state = "CA", county = "Glenn") %>% 
+  st_transform(5070)
+
+colusa <- aoi_get(state = "CA", county = "colusa") %>% 
+  st_transform(5070)
+
+sutter <- aoi_get(state = "CA", county = "sutter") %>% 
+  st_transform(5070)
+
+yuba <- aoi_get(state = "CA", county = "yuba") %>% 
+  st_transform(5070)
+
+yolo <- aoi_get(state = "CA", county = "yolo") %>% 
+  st_transform(5070)
+
+sacramento <- aoi_get(state = "CA", county = "sacramento") %>% 
+  st_transform(5070)
+
+solano <- aoi_get(state = "CA", county = "solano") %>% 
+  st_transform(5070)
+
+san_joaquin <- aoi_get(state = "CA", county = "san joaquin") %>% 
+  st_transform(5070)
+
+stanislaus <- aoi_get(state = "CA", county = "stanislaus") %>% 
+  st_transform(5070)
+
+merced <- aoi_get(state = "CA", county = "merced") %>% 
+  st_transform(5070)
+
+madera <- aoi_get(state = "CA", county = "madera") %>% 
+  st_transform(5070)
+
+kern <- aoi_get(state = "CA", county = "kern") %>% 
+  st_transform(5070)
+
+central_valley <- rbind(kern, madera, merced, stanislaus, san_joaquin, solano, sacramento, yolo, yuba, sutter, colusa, glenn)
+
+```
+
+
+```{r}
+#Map for Ag Wells in Kings County
+#Well purposes, well depths, well water levels
+#Compare Domestic + Ag wells 
+
+well_reports <- read_csv(here("data/well_reports.csv"))
+
+#Filtering out Kings county and only Domestic wells 
+ag_view <- well_reports %>% 
+  clean_names() %>% 
+  filter(decimal_longitude!="NA") %>% 
+  filter(decimal_latitude!="NA") %>% 
+  filter(county_name %in% c("Kings", "Fresno", "Tulare")) %>% 
+  filter(planned_use_former_use == "Water Supply Irrigation - Agricultural") %>% 
+  rename("lng" = decimal_longitude, "lat" = decimal_latitude)
+  
+ag_well <- well_reports %>% 
+  clean_names() %>% 
+  filter(decimal_longitude!="NA") %>% 
+  filter(decimal_latitude!="NA") %>% 
+  filter(county_name %in% c("Kings", "Fresno", "Tulare")) %>% 
+  filter(planned_use_former_use == "Water Supply Irrigation - Agricultural") %>% 
+  rename("lng" = decimal_longitude, "lat" = decimal_latitude) %>% 
+  select(planned_use_former_use, lng, lat) 
+
+
+
+#Code for map 
+
+eqdc = '+proj=eqdc +lat_0=40 +lon_0=-96 +lat_1=20 +lat_2=60 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs'
+
+USAboundaries::us_states(resolution = "low")
+
+us <- us_states()
+
+CA <- us %>%
+  filter(state_abbr == "CA") %>% 
+  st_transform(5070)
+
+#Transforming kings_well_reports to crs 4326 and 5070
+
+kings_well_plot_ag <- ag_well %>%
+  st_as_sf(coords = c("lng","lat"), crs = 4326) %>%
+  st_transform(5070) %>% 
+  st_filter(kings)
+  
+tulare_well_plot_ag <- ag_well %>%
+  st_as_sf(coords = c("lng","lat"), crs = 4326) %>%
+  st_transform(5070) %>% 
+  st_filter(tulare)
+  
+fresno_well_plot_ag <- ag_well %>%
+  st_as_sf(coords = c("lng","lat"), crs = 4326) %>%
+  st_transform(5070) %>% 
+  st_filter(fresno)
+
+well_plot_ag <- rbind(kings_well_plot_ag, tulare_well_plot_ag, fresno_well_plot_ag)
+
+#Plotting 
+ag = ggplot()+
+  geom_sf(data = kings, lty="solid", color = "black") +
+  geom_sf(data = fresno, lty="solid", color = "black") +
+  geom_sf(data = tulare, lty="solid", color = "black")+
+  geom_sf(data = GSA_boundary, color = "darkorange3", size =0.6)+
+  geom_sf(data = kings_well_plot_ag, color = "aquamarine4", size =0.5, alpha = 0.1) +
+  geom_sf(data = tulare_well_plot_ag, color = "aquamarine4", size =0.5, alpha = 0.1)+
+  geom_sf(data = fresno_well_plot_ag, color = "aquamarine4", size =0.5, alpha = 0.1)+
+  theme_void()
+  
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(size = 0.1, linetype = 'solid', colour = "lightgrey"),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank())
+p4 = ggplot()+
+  geom_sf(data = CA, lty = "solid") +
+  geom_sf(data = kings, lty="solid", color = "black") +
+  geom_sf(data = kings_well_plot_ag, color = "blue", size = 0.001) +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(size = 0.1, linetype = 'solid', colour = "lightgrey"),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank())
+
+
+library(patchwork)
+library(prettymapr)
+
+
+#combine ag and dom
+
+p5 = ggplot()+
+  geom_sf(data = kings, lty = "solid") +
+  geom_sf(data = fresno, lty="solid", color = "black") +
+  geom_sf(data = tulare, lty="solid", color = "black")+
+  geom_sf(data = GSA_boundary, color = "darkorange3", size =0.6) +
+  geom_sf(data = domestic_plot, color = "cadetblue3", size = 0.1, alpha = 0.1) +
+  geom_sf(data = well_plot_ag, color = "aquamarine4", size = 0.5, alpha = 0.5) +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(size = 0.1, linetype = 'solid', colour = "lightgrey"),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank())
+
+p1+p2
+p3+p4
+p5
+p3
+ag
+p1+p3+p5
+
+p2+p5
+ggsave("ag.png")
+```
+
+
+
+```{r}
+#Map for water shortage reports in Kings County
+#Reports of wells running dry
+
+water_shortage <- read_xls(here("data/water_shortage.xls"))
+
+
+#Code for map 
+
+USAboundaries::us_states(resolution = "low")
+
+us <- us_states()
+
+CA <- us %>%
+  filter(state_abbr == "CA") %>% 
+  st_transform(5070)
+
+water_shortage <- read_xls(here("data/water_shortage.xls")) %>% 
+  st_as_sf(coords = c("Longitude","Latitude"), crs = 4326) %>% 
+  st_transform(5070)
+
+water_shortage_plot <- water_shortage %>%
+  st_as_sf(coords = c("Longitude","Latitude"), crs = 4326) %>%
+  st_transform(5070)
+
+ dry_GSA = ggplot()+
+  geom_sf(data = kings, lty = "solid") +
+   geom_sf(data = tulare, lty = "solid")+
+   geom_sf(data = fresno, lty = "solid") +
+   geom_sf(data = GSA_boundary, color = "darkorange3")+
+  geom_sf(data = water_shortage_plot, color = "darkred", alpha = .1) +
+   theme_void()
+ 
+ 
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(size = 0.1, linetype = 'solid', colour = "lightgrey"))
+ 
+ #combine dry + disadv.
+ 
+p6 = ggplot()+
+  geom_sf(data = kings, lty = "solid") +
+  geom_sf(data = water_shortage_plot, color = "darkred", alpha = 0.5) +
+  geom_sf(data = kings_dac_block, color = "burlywood3")+
+   theme(panel.background = element_blank(),
+        panel.grid.major = element_line(size = 0.1, linetype = 'solid', colour = "lightgrey"),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank())
+
+p2+p6
+
+dry_GSA
+ggsave("dry_GSA.png")
+    
+```
+
+
+
+```{r}
+#Map for DAC communities in Kings County
+
+dac_block <- st_read(here("data/DAC_BG18.shp"))
+
+kings_dac_block <- dac_block %>% 
+  filter(COUNTYFP10 %in% c("031", "107", "019")) %>% 
+  filter(DAC18 == "Y")
+
+SDAC <- dac_block %>% 
+  filter(COUNTYFP10 %in% c("031", "107", "019")) %>% 
+  filter(DAC18 == "Y") %>% 
+  filter(MHI18 < 42737)
+
+DAC <- dac_block %>% 
+  filter(COUNTYFP10 %in% c("031", "107", "019")) %>% 
+  filter(DAC18 == "Y") %>% 
+  filter(!MHI18 < 42737) %>% 
+  filter(MHI18 < 56982)
+
+DAC_dry = ggplot()+
+  geom_sf(data = kings, lty = "solid") +
+  geom_sf(data = fresno, lty = "solid")+
+  geom_sf(data = tulare, lty = "solid")+
+  geom_sf(data = SDAC, fill = "burlywood3", alpha = 0.5) +
+  geom_sf(data = DAC, fill = "cadetblue", alpha = 0.5)+
+  
+  geom_sf(data = water_shortage_plot, color = "darkred", alpha = 0.2)+
+  theme_void()
++
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(size = 0.1, linetype = 'solid', colour = "lightgrey"),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank())
+
+ggplot()+
+  geom_sf(data = kings, lty = "solid") +
+  geom_sf(data = fresno, lty = "solid")+
+  geom_sf(data = tulare, lty = "solid")+
+  geom_sf(data = kings_dac_block, color = "burlywood3") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(size = 0.1, linetype = 'solid', colour = "lightgrey"),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank())
+
+disadv = ggplot()+
+  geom_sf(data = kings, lty = "solid") +
+  geom_sf(data = fresno, lty = "solid")+
+  geom_sf(data = tulare, lty = "solid")+
+  geom_sf(data = kings_dac_block, color = "burlywood3")+
+  geom_sf(data = water_shortage_plot, color = "darkred", alpha = 0.1) +
+
+   theme(panel.background = element_blank(),
+        panel.grid.major = element_line(size = 0.1, linetype = 'solid', colour = "lightgrey"),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank(), legend.position = "top")
+
+p2+disadv
+
+disadv
+DAC_dry
+ggsave("DAC_dry.png")
+```
+
+```{r}
+basin_boundary <- st_read(here("data/CA_Bulletin_118_Groundwater_Basins.shp"))
+
+fresno <- aoi_get(state = "CA", county = "Fresno") %>% 
+  st_transform(5070)
+
+tulare <- aoi_get(state = "CA", county = "Tulare") %>% 
+  st_transform(5070)
+
+kings_basin <- basin_boundary %>% 
+  filter(Basin_Su_1 == "SAN JOAQUIN VALLEY - KINGS") 
+
+p2 = ggplot()+
+  geom_sf(data = CA, lty = "solid") +
+  geom_sf(data = kings, lty="solid", color = "black") +
+  geom_sf(data = tulare, lty = "solid") +
+  geom_sf(data = fresno, lty = "solid")+
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(size = 0.1, linetype = 'solid', colour = "lightgrey"),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank())
+
+basin_map = ggplot()+
+  geom_sf(data = kings, lty = "solid") +
+  geom_sf(data = tulare, lty = "solid") +
+  geom_sf(data = fresno, lty = "solid") +
+  geom_sf(data = kings_basin, color = "blue") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(size = 0.1, linetype = 'solid', colour = "lightgrey"),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank())
+
+p2+basin_map
+
+
+```
+
+```{r}
+#Reading in GSA Boundaries
+
+southkings <- st_read(here("data/SouthKingsGSA.shp")) %>% 
+  st_as_sf(coords = c("Longitude","Latitude"), crs = 4326) %>% 
+  st_transform(5070) %>% 
+  select(GSA_Name)
+
+mcmullin <- st_read(here("data/McMullin_Area_GSA.shp")) %>% 
+  st_as_sf(coords = c("Longitude","Latitude"), crs = 4326) %>% 
+  st_transform(5070) %>% 
+  select(NAME) %>% 
+  rename("GSA_Name" = NAME)
+
+centralkings <- st_read(here("data/CentralKingsGSA.shp")) %>% 
+  st_as_sf(coords = c("Longitude","Latitude"), crs = 4326) %>% 
+  st_transform(5070) %>% 
+  select(GSA_Name)
+
+northfork <- st_read(here("data/NFK_GSA_boundary_rev05_2017_Teale.shp")) %>% 
+  st_as_sf(coords = c("Longitude","Latitude"), crs = 4326) %>% 
+  st_transform(5070) %>% 
+  select(Name) %>% 
+  rename("GSA_Name" = Name)
+
+northkings <- st_read(here("data/NorthKingsGSA_20190705.shp")) %>% 
+  st_as_sf(coords = c("Longitude","Latitude"), crs = 4326) %>% 
+  st_transform(5070) %>% 
+  select(GSA_Name) 
+
+kingsrivereast <- st_read(here("data/KingsRiverEast_GSA_MOU_03_2016.shp")) %>% 
+  st_as_sf(coords = c("Longitude","Latitude"), crs = 4326) %>% 
+  st_transform(5070) %>% 
+  select(name) %>% 
+  rename("GSA_Name" = name) %>% 
+  replace(is.na(.), "Kings River East")
+
+jamesID <- st_read(here("data/James_ID_v1_20151009_DWREdited.shp")) %>% 
+  st_as_sf(coords = c("Longitude","Latitude"), crs = 4326) %>% 
+  st_transform(5070) %>% 
+  select (Label) %>% 
+  rename("GSA_Name" = Label)
+
+GSA_boundary <- rbind(southkings, mcmullin, centralkings, northfork, northkings, kingsrivereast, jamesID)
+
+ggplot()+
+  geom_sf(data = kings, lty = "solid") +
+  geom_sf(data = tulare, lty = "solid") +
+  geom_sf(data = fresno, lty = "solid") +
+  geom_sf(data = kings_basin, color = "blue") +
+  geom_sf(data = GSA_boundary, color = "red") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(size = 0.1, linetype = 'solid', colour = "lightgrey"),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank()) +
+  ggrepel::geom_label_repel(data = GSA_boundary,
+                            aes(label = GSA_Name, geometry = geometry),
+                            stat = "sf_coordinates",
+                            min.segment.length = 0,
+                            size = 2)
+```
+
