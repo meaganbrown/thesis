@@ -107,12 +107,15 @@ dom = ggplot()+
   geom_sf(data = kings_well_plot, color = "deepskyblue4", size =0.1, alpha = 0.1) +
   geom_sf(data = tulare_well_plot, color = "deepskyblue4", size =0.1, alpha = 0.1) +
 geom_sf(data = fresno_well_plot, color = "deepskyblue4", size =0.1, alpha = 0.1) +
-  theme_void()
-   
   theme(panel.background = element_blank(),
         panel.grid.major = element_line(size = 0.1, linetype = 'solid', colour = "lightgrey"),
         axis.ticks.x=element_blank(),
-        axis.ticks.y=element_blank())
+        axis.ticks.y=element_blank(),
+        legend.position = "right",
+        scale_fill_manual(values = c("deepskyblue4", "darkorange3")))
+  
+dom
+  
 
 p2 = ggplot()+
   geom_sf(data = CA, lty = "solid") +
@@ -123,14 +126,9 @@ p2 = ggplot()+
   theme(panel.background = element_blank(),
         panel.grid.major = element_line(size = 0.1, linetype = 'solid', colour = "lightgrey"),
         axis.ticks.x=element_blank(),
-        axis.ticks.y=element_blank())
+        axis.ticks.y=element_blank()))
 
-ggsave("p2.png")
-dom
-p2+p1
-p1
-p2
-ggsave("dom.png")
+
 ```
 
 
@@ -175,6 +173,7 @@ kern <- aoi_get(state = "CA", county = "kern") %>%
 central_valley <- rbind(kern, madera, merced, stanislaus, san_joaquin, solano, sacramento, yolo, yuba, sutter, colusa, glenn)
 
 ```
+
 
 
 ```{r}
@@ -499,11 +498,17 @@ ggplot()+
   geom_sf(data = tulare, lty = "solid") +
   geom_sf(data = fresno, lty = "solid") +
   geom_sf(data = kings_basin, color = "blue") +
-  geom_sf(data = GSA_boundary, color = "red") +
+  geom_sf(data = southkings, fill = "red") +
+  geom_sf(data = northkings, fill = "orange")+
+  geom_sf(data = northfork, fill = "yellow")+
+  geom_sf(data = kingsrivereast, fill = "green")+
+   geom_sf(data = jamesID, fill = "blue")+
+  geom_sf(data = centralkings, fill = "violet")+geom_sf(data = mcmullin, fill = "pink")+
   theme(panel.background = element_blank(),
         panel.grid.major = element_line(size = 0.1, linetype = 'solid', colour = "lightgrey"),
         axis.ticks.x=element_blank(),
-        axis.ticks.y=element_blank()) +
+        axis.ticks.y=element_blank())+
+  
   ggrepel::geom_label_repel(data = GSA_boundary,
                             aes(label = GSA_Name, geometry = geometry),
                             stat = "sf_coordinates",
